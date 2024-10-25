@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>2010 and 2020 Data Maps Side by Side</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet" />
+
+    <!-- Add Mapbox GL Compare CSS -->
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-compare/v0.4.0/mapbox-gl-compare.css" type="text/css">
+
+    <style>
+        body { margin: 0; padding: 0; }
+        #container { display: flex; width: 100%; height: 100vh; }
+        #left-map, #right-map {
+            flex: 1;  /* Both maps will take up half of the screen */
+            height: 100%;
+        }
+        .map-overlay {
+            position: absolute;
+            background-color: white;
+            padding: 5px 10px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            z-index: 1;
+        }
+        #left-title {
+            top: 10px;
+            left: 10px;
+        }
+        #right-title {
+            top: 10px;
+            right: 10px;
+        }
+        #comparison-container {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+        .map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Container for both maps -->
+<div id="comparison-container">
+    <!-- 2010 Map (Left) -->
+    <div id="left-map" class="map"></div>
+    <div id="left-title" class="map-overlay">
+        <h2 style="margin: 0; padding: 5px; background-color: rgba(255, 255, 255, 0.8); border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <span style="color: #3366cc; font-weight: bold;">2010</span> Census Data
+        </h2>
+    </div>
+
+    <!-- 2020 Map (Right) -->
+    <div id="right-map" class="map"></div>
+    <div id="right-title" class="map-overlay">
+        <h2 style="margin: 0; padding: 5px; background-color: rgba(255, 255, 255, 0.8); border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <span style="color: #cc3366; font-weight: bold;">2020</span> Census Data
+        </h2>
+    </div>
+</div>
+
+<!-- Add Mapbox GL Compare JS -->
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-compare/v0.4.0/mapbox-gl-compare.js"></script>
+
+<script>
+    // Set your unique Mapbox access token
+    mapboxgl.accessToken = 'pk.eyJ1IjoiMDIwOXZhaWJoYXYiLCJhIjoiY2x6cW4xY2w5MWswZDJxcHhreHZ2OG5mbSJ9.ozamGsW5CZrZdL5bG7n_0A';
+
+    // Define the 2010 and 2020 map styles
+    const map2010Style = 'mapbox://styles/0209vaibhav/cm2nse9mf009201qja4cdfwu2';
+    const map2020Style = 'mapbox://styles/0209vaibhav/cm2nrqxbp003w01pcehof7pr3';
+
+    // Add center coordinates for both maps
+    const centerCoordinates = [-99.107, 41.726];  // Center of the U.S.
+
+    // Set zoom for both maps
+    const zoomLevel = 4;
+
+    // Initialize the 2010 map (Left side)
+    const leftMap = new mapboxgl.Map({
+        container: 'left-map',  // Left map container
+        style: map2010Style,
+        center: centerCoordinates,
+        zoom: zoomLevel
+    });
+
+    // Initialize the 2020 map (Right side)
+    const rightMap = new mapboxgl.Map({
+        container: 'right-map',  // Right map container
+        style: map2020Style,
+        center: centerCoordinates,
+        zoom: zoomLevel
+    });
+
+    // Add map controls to the left map (2010)
+    leftMap.addControl(new mapboxgl.NavigationControl());
+    leftMap.addControl(new mapboxgl.ScaleControl({
+        maxWidth: 80,
+        unit: 'imperial'
+    }));
+    leftMap.addControl(new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showAccuracyCircle: false
+    }));
+
+    // Add map controls to the right map (2020)
+    rightMap.addControl(new mapboxgl.NavigationControl());
+    rightMap.addControl(new mapboxgl.ScaleControl({
+        maxWidth: 80,
+        unit: 'imperial'
+    }));
+    rightMap.addControl(new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showAccuracyCircle: false
+    }));
+
+    const container = '#comparison-container';
+    const map = new mapboxgl.Compare(leftMap, rightMap, container, {
+        orientation: 'vertical'
+    });
+
+    let isDragging = false;
+    const slider = document.querySelector('.compare-swiper-vertical');
+
+    slider.addEventListener('mousedown', () => {
+        isDragging = true;
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            const containerRect = container.getBoundingClientRect();
+            const percentage = (e.clientX - containerRect.left) / containerRect.width * 100;
+            map.setSlider(percentage);
+        }
+    });
+
+    // Add a sync button
+    const syncButton = document.createElement('button');
+    syncButton.textContent = 'Sync Maps';
+    syncButton.style.position = 'absolute';
+    syncButton.style.top = '10px';
+    syncButton.style.left = '50%';
+    syncButton.style.transform = 'translateX(-50%)';
+    syncButton.style.zIndex = '10';
+    syncButton.style.padding = '12px 24px';  // Increased padding for a larger button
+    syncButton.style.background = 'linear-gradient(90deg, #4a90e2, #007aff)';  // Gradient background
+    syncButton.style.color = 'white';  // Text color
+    syncButton.style.border = 'none';  // No border
+    syncButton.style.borderRadius = '8px';  // More rounded corners
+    syncButton.style.cursor = 'pointer';  // Pointer cursor
+    syncButton.style.fontSize = '16px';  // Font size
+    syncButton.style.fontFamily = 'Arial, sans-serif';  // Modern font
+    syncButton.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.2)';  // Deeper shadow
+    syncButton.style.transition = 'background 0.3s, transform 0.2s';  // Transition for background and transform
+    syncButton.onmouseover = () => {
+        syncButton.style.background = 'linear-gradient(90deg, #007aff, #4a90e2)';  // Reverse gradient on hover
+        syncButton.style.transform = 'scale(1.05)';  // Slightly enlarge on hover
+    };
+    syncButton.onmouseout = () => {
+        syncButton.style.background = 'linear-gradient(90deg, #4a90e2, #007aff)';  // Original gradient
+        syncButton.style.transform = 'scale(1)';  // Reset size
+    };
+    document.body.appendChild(syncButton);
+
+    let isSynced = false;
+
+    syncButton.addEventListener('click', () => {
+        isSynced = !isSynced;
+        syncButton.textContent = isSynced ? 'Unsync Maps' : 'Sync Maps';
+        if (isSynced) {
+            rightMap.setCenter(leftMap.getCenter());
+            rightMap.setZoom(leftMap.getZoom());
+        }
+    });
+
+    leftMap.on('move', () => {
+        if (isSynced) {
+            rightMap.setCenter(leftMap.getCenter());
+            rightMap.setZoom(leftMap.getZoom());
+        }
+    });
+
+    rightMap.on('move', () => {
+        if (isSynced) {
+            leftMap.setCenter(rightMap.getCenter());
+            leftMap.setZoom(rightMap.getZoom());
+        }
+    });
+</script>
+
+</body>
+</html>
